@@ -141,7 +141,7 @@
   </head>
   <body>
     <h1>GitHub Repo Info</h1>
-    <form class="repo-form" onsubmit="fetchRepo(); return false;">
+    <form class="repo-form" onsubmit="onFormSubmit(event);">
       <input
         type="text"
         id="username"
@@ -154,39 +154,167 @@
         id="repo"
         placeholder="Repo name"
         autocomplete="off"
-        required
+        oninput="filterRepos()"
+      />
+      <input
+        type="password"
+        id="token"
+        placeholder="GitHub token (optional)"
+        style="min-width: 160px"
+        autocomplete="off"
       />
       <button type="submit">Get Info</button>
     </form>
+    <div id="repo-list" style="width: 100%; max-width: 480px"></div>
     <div id="output"></div>
 
     <script>
+      let allRepos = [];
+      let lastFetchedUser = "";
+
+      async function onFormSubmit(e) {
+        e.preventDefault();
+        await fetchReposForUser();
+        filterRepos();
+        fetchRepo();
+      }
+
+      async function fetchReposForUser() {
+        const user = document.getElementById("username").value.trim();
+        const token = document.getElementById("token").value.trim();
+        const repoInput = document.getElementById("repo");
+        const repoList = document.getElementById("repo-list");
+        const output = document.getElementById("output");
+        repoInput.value = "";
+        repoList.innerHTML = "";
+        output.innerHTML = "";
+        if (!user) {
+          allRepos = [];
+          return;
+        }
+        if (user === lastFetchedUser) return;
+        lastFetchedUser = user;
+        repoList.innerHTML = `<div class=\"card\"><p>Loading repos...</p></div>`;
+        try {
+          let repos = [];
+          let page = 1;
+          let perPage = 100;
+          let more = true;
+          while (more) {
+            const headers = token ? { Authorization: `token ${token}` } : {};
+            const res = await fetch(
+              `https://api.github.com/users/${user}/repos?per_page=${perPage}&page=${page}`,
+              { headers }
+            );
+            if (!res.ok) {
+              if (res.status === 403) {
+                throw new Error("API rate limit exceeded. Add a GitHub token.");
+              } else {
+                throw new Error("User or repos not found");
+              }
+            }
+            const data = await res.json();
+            repos = repos.concat(data);
+            if (data.length < perPage) more = false;
+            else page++;
+          }
+          allRepos = repos;
+          if (repos.length === 0) {
+            repoList.innerHTML = `<div class=\"card\"><p>No repositories found for this user.</p></div>`;
+            return;
+          }
+          renderRepoList(repos);
+        } catch (err) {
+          allRepos = [];
+          repoList.innerHTML = `<div class=\"card\"><p style='color:#ef4444;'>Error: ${err.message}</p></div>`;
+        }
+      }
+
+      function filterRepos() {
+        const filter = document
+          .getElementById("repo")
+          .value.trim()
+          .toLowerCase();
+        const repoList = document.getElementById("repo-list");
+        if (!allRepos.length) {
+          repoList.innerHTML = "";
+          return;
+        }
+        const filtered = allRepos.filter((r) =>
+          r.name.toLowerCase().includes(filter)
+        );
+        renderRepoList(filtered);
+      }
+
+      function renderRepoList(repos) {
+        const repoList = document.getElementById("repo-list");
+        if (!repos.length) {
+          repoList.innerHTML = `<div class="card"><p>No repositories match your search.</p></div>`;
+          return;
+        }
+        repoList.innerHTML = `<div class="card" style="padding:1rem 1.5rem;max-height:320px;overflow:auto;">
+          <ul style="list-style:none;padding:0;margin:0;">
+            ${repos
+              .map(
+                (r) =>
+                  `<li style="padding:0.4rem 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:0.5rem;">
+                    <button onclick="selectRepo('${r.name.replace(
+                      /'/g,
+                      "\\'"
+                    )}')" style="background:none;border:none;color:var(--accent);font-size:1rem;cursor:pointer;text-align:left;flex:1 1 auto;">${
+                    r.name
+                  }</button>
+                    <span style="font-size:0.95em;color:#a1a1aa;">⭐${
+                      r.stargazers_count
+                    }</span>
+                  </li>`
+              )
+              .join("")}
+          </ul>
+        </div>`;
+      }
+
+      function selectRepo(repoName) {
+        document.getElementById("repo").value = repoName;
+        filterRepos();
+        fetchRepo();
+      }
+
       async function fetchRepo() {
         const user = document.getElementById("username").value.trim();
         const repo = document.getElementById("repo").value.trim();
+        const token = document.getElementById("token").value.trim();
         const output = document.getElementById("output");
-        output.innerHTML = `<div class="card"><p>Loading...</p></div>`;
+        if (!user || !repo) return;
+        output.innerHTML = `<div class=\"card\"><p>Loading...</p></div>`;
         const url = `https://api.github.com/repos/${user}/${repo}`;
         try {
-          const res = await fetch(url);
-          if (!res.ok) throw new Error("Repo not found");
+          const headers = token ? { Authorization: `token ${token}` } : {};
+          const res = await fetch(url, { headers });
+          if (!res.ok) {
+            if (res.status === 403) {
+              throw new Error("API rate limit exceeded. Add a GitHub token.");
+            } else {
+              throw new Error("Repo not found");
+            }
+          }
           const data = await res.json();
           output.innerHTML = `
-            <div class="card">
-              <h2><a href="${data.html_url}" target="_blank" rel="noopener">${
-            data.full_name
-          }</a></h2>
+            <div class=\"card\">
+              <h2><a href=\"${
+                data.html_url
+              }\" target=\"_blank\" rel=\"noopener\">${data.full_name}</a></h2>
               <p>${
                 data.description
                   ? data.description
                   : "<span style='color:#a1a1aa;'>No description</span>"
               }</p>
-              <p style="margin-top:1.2rem; font-size:1.1rem;">
-                <span title="Stars">⭐ ${data.stargazers_count}</span>
+              <p style=\"margin-top:1.2rem; font-size:1.1rem;\">
+                <span title=\"Stars\">⭐ ${data.stargazers_count}</span>
                 &nbsp;|&nbsp;
-                <span title="Forks">🍴 ${data.forks_count}</span>
+                <span title=\"Forks\">🍴 ${data.forks_count}</span>
                 &nbsp;|&nbsp;
-                <span title="Watchers">👁 ${data.watchers_count}</span>
+                <span title=\"Watchers\">👁 ${data.watchers_count}</span>
               </p>
               <p>📌 <b>Default Branch:</b> ${data.default_branch}</p>
               <p>📝 <b>License:</b> ${
@@ -195,21 +323,21 @@
               <p>📅 <b>Created:</b> ${new Date(
                 data.created_at
               ).toLocaleDateString()}</p>
-              <div style="display:flex;align-items:center;gap:1rem;margin-top:1.5rem;">
-                <img src="${
+              <div style=\"display:flex;align-items:center;gap:1rem;margin-top:1.5rem;\">
+                <img src=\"${
                   data.owner.avatar_url
-                }" width="72" height="72" alt="Owner Avatar" loading="lazy" />
+                }\" width=\"72\" height=\"72\" alt=\"Owner Avatar\" loading=\"lazy\" />
                 <div>
-                  <p style="margin:0;font-weight:600;">${data.owner.login}</p>
-                  <a href="${
+                  <p style=\"margin:0;font-weight:600;\">${data.owner.login}</p>
+                  <a href=\"${
                     data.owner.html_url
-                  }" target="_blank" rel="noopener" style="color:var(--accent);font-size:0.98rem;">View Profile</a>
+                  }\" target=\"_blank\" rel=\"noopener\" style=\"color:var(--accent);font-size:0.98rem;\">View Profile</a>
                 </div>
               </div>
             </div>
           `;
         } catch (err) {
-          output.innerHTML = `<div class="card"><p style="color:#ef4444;">Error: ${err.message}</p></div>`;
+          output.innerHTML = `<div class=\"card\"><p style=\"color:#ef4444;\">Error: ${err.message}</p></div>`;
         }
       }
     </script>
