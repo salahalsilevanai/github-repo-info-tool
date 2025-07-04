@@ -148,6 +148,7 @@
         placeholder="GitHub username"
         autocomplete="username"
         required
+        onblur="onUsernameBlur(event)"
       />
       <input
         type="text"
@@ -155,6 +156,8 @@
         placeholder="Repo name"
         autocomplete="off"
         oninput="filterRepos()"
+        onfocus="onOtherFieldFocus('repo')"
+        oninputcapture="onOtherFieldFocus('repo')"
       />
       <input
         type="password"
@@ -162,6 +165,8 @@
         placeholder="GitHub token (optional)"
         style="min-width: 160px"
         autocomplete="off"
+        onfocus="onOtherFieldFocus('token')"
+        oninputcapture="onOtherFieldFocus('token')"
       />
       <button type="submit">Get Info</button>
     </form>
@@ -177,6 +182,22 @@
         await fetchReposForUser();
         filterRepos();
         fetchRepo();
+      }
+
+      async function onUsernameBlur(e) {
+        // Only trigger if value is not empty and different from lastFetchedUser
+        const user = document.getElementById("username").value.trim();
+        if (!user || user === lastFetchedUser) return;
+        await fetchReposForUser();
+        filterRepos();
+      }
+
+      let lastTriggeredUser = "";
+      function onOtherFieldFocus(field) {
+        const user = document.getElementById("username").value.trim();
+        if (!user || user === lastFetchedUser || user === lastTriggeredUser) return;
+        lastTriggeredUser = user;
+        fetchReposForUser().then(() => filterRepos());
       }
 
       async function fetchReposForUser() {
