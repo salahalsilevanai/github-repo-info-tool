@@ -299,6 +299,41 @@
             }
           }
           const data = await res.json();
+          // Fun/creative details
+          const daysOld = Math.floor(
+            (Date.now() - new Date(data.created_at)) / (1000 * 60 * 60 * 24)
+          );
+          const updatedAgo = Math.floor(
+            (Date.now() - new Date(data.updated_at)) / (1000 * 60 * 60 * 24)
+          );
+          const openIssues = data.open_issues_count;
+          const topics =
+            data.topics && data.topics.length
+              ? data.topics
+                  .map(
+                    (t) =>
+                      `<span style='background:#eef2ff;color:#6366f1;padding:0.2em 0.7em;border-radius:1em;font-size:0.95em;margin-right:0.3em;'>#${t}</span>`
+                  )
+                  .join("")
+              : "<span style='color:#a1a1aa;'>No topics</span>";
+          const homepage = data.homepage
+            ? `<a href='${data.homepage}' target='_blank' style='color:#10b981;font-weight:600;'>🌐 Homepage</a>`
+            : "";
+          const archived = data.archived
+            ? "<span style='color:#f59e42;font-weight:600;'>📦 Archived</span>"
+            : "";
+          const funFact =
+            data.stargazers_count > 1000
+              ? "<span style='color:#facc15;font-weight:600;'>🌟 This repo is a star magnet!</span>"
+              : data.forks_count > 500
+              ? "<span style='color:#38bdf8;font-weight:600;'>🍴 Fork-tastic!</span>"
+              : data.open_issues_count > 100
+              ? "<span style='color:#ef4444;font-weight:600;'>🚨 So many open issues! Help wanted?</span>"
+              : "";
+          const sizeMB = (data.size / 1024).toFixed(2);
+          const language = data.language
+            ? `<span style='color:#6366f1;font-weight:600;'>${data.language}</span>`
+            : '<span style="color:#a1a1aa;">Unknown</span>';
           output.innerHTML = `
             <div class=\"card\">
               <h2><a href=\"${
@@ -309,20 +344,30 @@
                   ? data.description
                   : "<span style='color:#a1a1aa;'>No description</span>"
               }</p>
+              <div style=\"margin:0.7em 0 1.2em 0;\">${topics}</div>
               <p style=\"margin-top:1.2rem; font-size:1.1rem;\">
                 <span title=\"Stars\">⭐ ${data.stargazers_count}</span>
                 &nbsp;|&nbsp;
                 <span title=\"Forks\">🍴 ${data.forks_count}</span>
                 &nbsp;|&nbsp;
                 <span title=\"Watchers\">👁 ${data.watchers_count}</span>
+                &nbsp;|&nbsp;
+                <span title=\"Open Issues\">🐞 ${openIssues}</span>
               </p>
               <p>📌 <b>Default Branch:</b> ${data.default_branch}</p>
               <p>📝 <b>License:</b> ${
                 data.license ? data.license.name : "None"
               }</p>
+              <p>📦 <b>Repo Size:</b> ${sizeMB} MB</p>
+              <p>💻 <b>Main Language:</b> ${language}</p>
               <p>📅 <b>Created:</b> ${new Date(
                 data.created_at
-              ).toLocaleDateString()}</p>
+              ).toLocaleDateString()} (${daysOld} days ago)</p>
+              <p>⏰ <b>Last updated:</b> ${new Date(
+                data.updated_at
+              ).toLocaleString()} (${updatedAgo} days ago)</p>
+              <p>${homepage} ${archived}</p>
+              <p>${funFact}</p>
               <div style=\"display:flex;align-items:center;gap:1rem;margin-top:1.5rem;\">
                 <img src=\"${
                   data.owner.avatar_url
