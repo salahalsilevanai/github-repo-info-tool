@@ -126,6 +126,29 @@
         #output {
           max-width: 98vw;
         }
+        .repo-form {
+          flex-direction: column;
+          gap: 0.7rem;
+          width: 98vw;
+          box-sizing: border-box;
+        }
+        .repo-form input,
+        .repo-form button {
+          width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
+        }
+        .card {
+          width: 98vw;
+          max-width: 100vw;
+        }
+        #repo-list {
+          max-width: 98vw !important;
+        }
+        h1 {
+          font-size: 2rem;
+          margin: 2rem 0 1.2rem 0;
+        }
       }
       @keyframes fadeIn {
         from {
@@ -195,7 +218,8 @@
       let lastTriggeredUser = "";
       function onOtherFieldFocus(field) {
         const user = document.getElementById("username").value.trim();
-        if (!user || user === lastFetchedUser || user === lastTriggeredUser) return;
+        if (!user || user === lastFetchedUser || user === lastTriggeredUser)
+          return;
         lastTriggeredUser = user;
         fetchReposForUser().then(() => filterRepos());
       }
