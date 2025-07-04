@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GitHub Repo Info</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 2rem;
+      }
+      input {
+        margin: 0.5rem 0;
+        padding: 0.5rem;
+      }
+      #output {
+        margin-top: 1rem;
+        border: 1px solid #ccc;
+        padding: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>GitHub Repo Info Tool</h1>
+    <input type="text" id="username" placeholder="GitHub username" />
+    <input type="text" id="repo" placeholder="Repo name" />
+    <button onclick="fetchRepo()">Get Info</button>
+
+    <div id="output"></div>
+
+    <script>
+      async function fetchRepo() {
+        const user = document.getElementById("username").value;
+        const repo = document.getElementById("repo").value;
+        const url = `https://api.github.com/repos/${user}/${repo}`;
+        const output = document.getElementById("output");
+        output.innerHTML = "Loading...";
+
+        try {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error("Repo not found");
+          const data = await res.json();
+
+          output.innerHTML = `
+          <h2><a href="${data.html_url}" target="_blank">${
+            data.full_name
+          }</a></h2>
+          <p>${data.description || "No description"}</p>
+          <p>⭐ Stars: ${data.stargazers_count} | 🍴 Forks: ${
+            data.forks_count
+          } | 👁 Watchers: ${data.watchers_count}</p>
+          <p>📌 Default Branch: ${data.default_branch}</p>
+          <p>📝 License: ${data.license ? data.license.name : "None"}</p>
+          <p>📅 Created: ${new Date(data.created_at).toLocaleDateString()}</p>
+          <img src="${data.owner.avatar_url}" width="100" alt="Owner Avatar" />
+        `;
+        } catch (err) {
+          output.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`;
+        }
+      }
+    </script>
+  </body>
+</html>
