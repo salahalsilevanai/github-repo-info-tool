@@ -508,6 +508,59 @@
           const language = data.language
             ? `<span style='color:#6366f1;font-weight:600;'>${data.language}</span>`
             : '<span style="color:#a1a1aa;">Unknown</span>';
+
+          // Fetch last 5 commits
+          let commitsHtml = "";
+          try {
+            const commitsRes = await fetch(
+              `https://api.github.com/repos/${user}/${repo}/commits?per_page=5`,
+              { headers }
+            );
+            if (commitsRes.ok) {
+              const commits = await commitsRes.json();
+              if (commits.length) {
+                commitsHtml =
+                  `<div style='margin-top:1.2em;'><b>Last 5 Commits:</b><ul style='padding-left:1.2em;margin:0.5em 0;'>` +
+                  commits
+                    .map(
+                      (c) =>
+                        `<li style='margin-bottom:0.4em;'><span style='color:var(--accent);font-weight:600;'>${
+                          c.commit.author.name
+                        }</span>: ${c.commit.message.substring(0, 60)}${
+                          c.commit.message.length > 60 ? "..." : ""
+                        } <span style='color:#a1a1aa;font-size:0.95em;'>(${new Date(
+                          c.commit.author.date
+                        ).toLocaleDateString()})</span></li>`
+                    )
+                    .join("") +
+                  `</ul></div>`;
+              }
+            }
+          } catch {}
+
+          // Fetch top 5 contributors
+          let contributorsHtml = "";
+          try {
+            const contribRes = await fetch(
+              `https://api.github.com/repos/${user}/${repo}/contributors?per_page=5`,
+              { headers }
+            );
+            if (contribRes.ok) {
+              const contributors = await contribRes.json();
+              if (contributors.length) {
+                contributorsHtml =
+                  `<div style='margin-top:1.2em;'><b>Top 5 Contributors:</b><ul style='padding-left:1.2em;margin:0.5em 0;'>` +
+                  contributors
+                    .map(
+                      (c) =>
+                        `<li style='margin-bottom:0.4em;'><img src='${c.avatar_url}' width='20' height='20' style='border-radius:50%;vertical-align:middle;margin-right:0.4em;'/> <a href='${c.html_url}' target='_blank' style='color:var(--accent);font-weight:600;'>${c.login}</a> <span style='color:#a1a1aa;font-size:0.95em;'>(Commits: ${c.contributions})</span></li>`
+                    )
+                    .join("") +
+                  `</ul></div>`;
+              }
+            }
+          } catch {}
+
           output.innerHTML = `
             <div class=\"card\">
               <h2><a href=\"${
@@ -542,6 +595,8 @@
               ).toLocaleString()} (${updatedAgo} days ago)</p>
               <p>${homepage} ${archived}</p>
               <p>${funFact}</p>
+              ${commitsHtml}
+              ${contributorsHtml}
               <div style=\"display:flex;align-items:center;gap:1rem;margin-top:1.5rem;\">
                 <img src=\"${
                   data.owner.avatar_url
