@@ -38,14 +38,18 @@
       }
       html,
       body {
-        height: 100%;
+        height: auto;
+        min-height: 100vh;
         margin: 0;
         padding: 0;
         background: var(--bg);
         color: var(--primary);
         font-family: "Inter", sans-serif;
-        min-height: 100vh;
         box-sizing: border-box;
+      }
+      html.dark-mode,
+      body.dark-mode {
+        background: var(--bg) !important;
       }
       body {
         display: flex;
