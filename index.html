@@ -9,6 +9,14 @@
       rel="stylesheet"
     />
     <style>
+      body.dark-mode {
+        --primary: #f4f4f5;
+        --accent: #818cf8;
+        --bg: #18181b;
+        --card-bg: #23232a;
+        --border: #27272a;
+        --shadow: 0 4px 24px 0 rgba(24, 24, 27, 0.18);
+      }
       :root {
         --primary: #18181b;
         --accent: #6366f1;
@@ -165,6 +173,31 @@
     </style>
   </head>
   <body>
+    <button
+      id="darkModeToggle"
+      aria-label="Toggle dark mode"
+      style="
+        position: fixed;
+        top: 1.2rem;
+        right: 1.2rem;
+        z-index: 1000;
+        background: var(--card-bg);
+        color: var(--primary);
+        border: 1px solid var(--border);
+        border-radius: 50%;
+        width: 44px;
+        height: 44px;
+        box-shadow: var(--shadow);
+        cursor: pointer;
+        transition: background var(--transition), color var(--transition);
+        font-size: 1.3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      🌙
+    </button>
     <h1>GitHub Repo Info</h1>
     <form class="repo-form" onsubmit="onFormSubmit(event);">
       <input
@@ -199,6 +232,24 @@
     <div id="output"></div>
 
     <script>
+      // Dark mode logic
+      const darkModeToggle = document.getElementById("darkModeToggle");
+      function setDarkMode(enabled) {
+        document.body.classList.toggle("dark-mode", enabled);
+        darkModeToggle.innerHTML = enabled ? "☀️" : "🌙";
+        localStorage.setItem("darkMode", enabled ? "1" : "0");
+      }
+      function initDarkMode() {
+        const saved = localStorage.getItem("darkMode");
+        const prefersDark = window.matchMedia(
+          "(prefers-color-scheme: dark)"
+        ).matches;
+        setDarkMode(saved === "1" || (saved === null && prefersDark));
+      }
+      darkModeToggle.addEventListener("click", () => {
+        setDarkMode(!document.body.classList.contains("dark-mode"));
+      });
+      window.addEventListener("DOMContentLoaded", initDarkMode);
       let allRepos = [];
       let lastFetchedUser = "";
 
