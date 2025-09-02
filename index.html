@@ -524,13 +524,15 @@
                   commits
                     .map(
                       (c) =>
-                        `<li style='margin-bottom:0.4em;'><span style='color:var(--accent);font-weight:600;'>${
+                        `<li style='margin-bottom:0.4em;'><a href='${
+                          c.html_url
+                        }' target='_blank' style='text-decoration:none;color:inherit;'><span style='color:var(--accent);font-weight:600;'>${
                           c.commit.author.name
                         }</span>: ${c.commit.message.substring(0, 60)}${
                           c.commit.message.length > 60 ? "..." : ""
                         } <span style='color:#a1a1aa;font-size:0.95em;'>(${new Date(
                           c.commit.author.date
-                        ).toLocaleDateString()})</span></li>`
+                        ).toLocaleDateString()})</span></a></li>`
                     )
                     .join("") +
                   `</ul></div>`;
