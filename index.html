@@ -237,6 +237,10 @@
       />
       <button type="submit">Get Info</button>
     </form>
+    <div
+      id="user-profile"
+      style="width: 100%; max-width: 480px; margin-bottom: 1.5rem"
+    ></div>
     <div id="repo-list" style="width: 100%; max-width: 480px"></div>
     <div id="output"></div>
 
@@ -291,9 +295,11 @@
         const token = document.getElementById("token").value.trim();
         const repoInput = document.getElementById("repo");
         const repoList = document.getElementById("repo-list");
+        const userProfile = document.getElementById("user-profile");
         const output = document.getElementById("output");
         repoInput.value = "";
         repoList.innerHTML = "";
+        userProfile.innerHTML = "";
         output.innerHTML = "";
         if (!user) {
           allRepos = [];
@@ -302,13 +308,62 @@
         if (user === lastFetchedUser) return;
         lastFetchedUser = user;
         repoList.innerHTML = `<div class=\"card\"><p>Loading repos...</p></div>`;
+        userProfile.innerHTML = `<div class=\"card\"><p>Loading profile...</p></div>`;
         try {
+          // Fetch user profile
+          const headers = token ? { Authorization: `token ${token}` } : {};
+          const userRes = await fetch(`https://api.github.com/users/${user}`, {
+            headers,
+          });
+          if (!userRes.ok) {
+            throw new Error("User not found");
+          }
+          const userData = await userRes.json();
+          userProfile.innerHTML = `
+            <div class="card" style="display:flex;align-items:center;gap:1.2rem;">
+              <img src="${userData.avatar_url}" alt="${
+            userData.login
+          } avatar" width="72" height="72" style="border-radius:50%;box-shadow:0 2px 8px 0 rgba(24,24,27,0.08);border:2px solid var(--border);" loading="lazy" />
+              <div style="flex:1;">
+                <div style="font-size:1.25rem;font-weight:600;">${
+                  userData.name ? userData.name : userData.login
+                }</div>
+                <div style="color:var(--accent);font-size:1.05rem;">@${
+                  userData.login
+                }</div>
+                <div style="margin:0.3em 0 0.5em 0;color:#a1a1aa;">${
+                  userData.bio
+                    ? userData.bio
+                    : "<span style='color:#a1a1aa;'>No bio</span>"
+                }</div>
+                <div style="font-size:0.98rem;color:#a1a1aa;">
+                  ${userData.location ? `📍 ${userData.location}` : ""}
+                  ${
+                    userData.blog
+                      ? `&nbsp;|&nbsp;<a href='${userData.blog}' target='_blank' style='color:var(--accent);'>Website</a>`
+                      : ""
+                  }
+                </div>
+                <div style="margin-top:0.5em;font-size:0.98rem;">
+                  <span title="Followers">👥 ${
+                    userData.followers
+                  } followers</span>
+                  &nbsp;|&nbsp;
+                  <span title="Following">➡️ ${
+                    userData.following
+                  } following</span>
+                  &nbsp;|&nbsp;
+                  <span title="Public Repos">📦 ${userData.public_repos}</span>
+                </div>
+              </div>
+            </div>
+          `;
+          // Fetch repos
           let repos = [];
           let page = 1;
           let perPage = 100;
           let more = true;
           while (more) {
-            const headers = token ? { Authorization: `token ${token}` } : {};
             const res = await fetch(
               `https://api.github.com/users/${user}/repos?per_page=${perPage}&page=${page}`,
               { headers }
@@ -333,6 +388,7 @@
           renderRepoList(repos);
         } catch (err) {
           allRepos = [];
+          userProfile.innerHTML = "";
           repoList.innerHTML = `<div class=\"card\"><p style='color:#ef4444;'>Error: ${err.message}</p></div>`;
         }
       }
